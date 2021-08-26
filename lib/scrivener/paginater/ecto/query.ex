@@ -47,21 +47,7 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
 
   defp total_entries(query, repo, caller, options) do
     prefix = options[:prefix]
-
-    total_entries =
-      query
-      |> exclude(:preload)
-      |> exclude(:order_by)
-      |> aggregate()
-      |> one(repo, caller, prefix)
-
-    total_entries || 0
-  end
-
-  defp aggregate(%{distinct: %{expr: expr}} = query) when expr == true or is_list(expr) do
-    query
-    |> exclude(:select)
-    |> count()
+    aggregate(query, repo, caller, prefix)
   end
 
   defp aggregate(
@@ -74,24 +60,27 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
              }
              | _
            ]
-         } = query
+         } = query,
+         repo,
+         caller,
+         prefix
        ) do
     query
+    |> exclude(:preload)
+    |> exclude(:order_by)
     |> exclude(:select)
     |> select([{x, source_index}], struct(x, ^[field]))
-    |> count()
+    |> subquery()
+    |> select(count("*"))
+    |> one(repo, caller, prefix)
   end
 
-  defp aggregate(query) do
-    query
-    |> exclude(:select)
-    |> select(count("*"))
+  defp aggregate(query, repo, caller, nil) do
+    repo.aggregate(query, :count, caller: caller)
   end
 
-  defp count(query) do
-    query
-    |> subquery
-    |> select(count("*"))
+  defp aggregate(query, repo, caller, prefix) do
+    repo.aggregate(query, :count, caller: caller, prefix: prefix)
   end
 
   defp total_pages(0, _), do: 1
