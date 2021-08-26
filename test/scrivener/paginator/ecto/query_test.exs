@@ -320,6 +320,18 @@ defmodule Scrivener.Paginator.Ecto.QueryTest do
       assert page.total_entries == 2
     end
 
+    test "can be used with combinations" do
+      create_posts()
+
+      page =
+        Post
+        |> Post.published()
+        |> union(^Post.unpublished(Post))
+        |> Scrivener.Ecto.Repo.paginate()
+
+      assert page.total_entries == 7
+    end
+
     test "can be provided a Scrivener.Config directly" do
       posts = create_posts()
 
