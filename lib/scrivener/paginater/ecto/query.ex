@@ -45,6 +45,29 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
     |> all(repo, caller, prefix)
   end
 
+  defp total_entries(%{combinations: [_|_]} = query, repo, caller, options) do
+    prefix = options[:prefix]
+
+    simpler_query =
+      query
+      |> exclude(:preload)
+      |> exclude(:order_by)
+
+    {sql_query, params} = Ecto.Adapters.SQL.to_sql(:all, repo, simpler_query)
+    count_query = "select count(*) from (#{sql_query}) as count_me"
+    %Postgrex.Result{
+      columns: ["count"],
+      command: :select,
+      num_rows: 1,
+      rows: [[total_entries]]
+    }
+    = Ecto.Adapters.SQL.query!(
+      repo, "select count(*) from (#{sql_query}) as count_me", params
+    )
+
+    total_entries || 0
+  end
+
   defp total_entries(query, repo, caller, options) do
     prefix = options[:prefix]
 
@@ -60,8 +83,13 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
 
   defp aggregate(%{distinct: %{expr: expr}} = query) when expr == true or is_list(expr) do
     query
-    |> exclude(:select)
     |> count()
+  end
+
+  defp aggregate(%{order_bys: %{expr: expr}} = query) do
+    query
+    |> exclude(:preload)
+    |> select(count("*"))
   end
 
   defp aggregate(
