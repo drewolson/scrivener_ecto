@@ -37,23 +37,23 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
 
   defp entries(query, repo, page_number, _, page_size, caller, options) do
     offset = Keyword.get_lazy(options, :offset, fn -> page_size * (page_number - 1) end)
-    prefix = options[:prefix]
+    {prefix, options} = Keyword.pop(options, :prefix)
 
     query
     |> offset(^offset)
     |> limit(^page_size)
-    |> all(repo, caller, prefix)
+    |> all(repo, caller, prefix, options)
   end
 
   defp total_entries(query, repo, caller, options) do
-    prefix = options[:prefix]
+    {prefix, options} = Keyword.pop(options, :prefix)
 
     total_entries =
       query
       |> exclude(:preload)
       |> exclude(:order_by)
       |> aggregate()
-      |> one(repo, caller, prefix)
+      |> one(repo, caller, prefix, options)
 
     total_entries || 0
   end
@@ -100,19 +100,23 @@ defimpl Scrivener.Paginater, for: Ecto.Query do
     (total_entries / page_size) |> Float.ceil() |> round
   end
 
-  defp all(query, repo, caller, nil) do
-    repo.all(query, caller: caller)
+  defp all(query, repo, caller, nil, options) do
+    options = Keyword.merge(options, caller: caller)
+    repo.all(query, options)
   end
 
-  defp all(query, repo, caller, prefix) do
-    repo.all(query, caller: caller, prefix: prefix)
+  defp all(query, repo, caller, prefix, options) do
+    options = Keyword.merge(options, caller: caller, prefix: prefix)
+    repo.all(query, options)
   end
 
-  defp one(query, repo, caller, nil) do
-    repo.one(query, caller: caller)
+  defp one(query, repo, caller, nil, options) do
+    options = Keyword.merge(options, caller: caller)
+    repo.one(query, options)
   end
 
-  defp one(query, repo, caller, prefix) do
-    repo.one(query, caller: caller, prefix: prefix)
+  defp one(query, repo, caller, prefix, options) do
+    options = Keyword.merge(options, caller: caller, prefix: prefix)
+    repo.one(query, options)
   end
 end

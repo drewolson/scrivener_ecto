@@ -1,6 +1,6 @@
 defmodule Scrivener.Paginator.Ecto.QueryTest do
   use Scrivener.Ecto.TestCase
-
+  import ExUnit.CaptureLog
   alias Scrivener.Ecto.{Comment, KeyValue, Post, User}
 
   defp create_posts do
@@ -444,6 +444,16 @@ defmodule Scrivener.Paginator.Ecto.QueryTest do
       assert page_tenant_2.page_number == 1
       assert page_tenant_2.total_entries == 2
       assert page_tenant_2.total_pages == 1
+    end
+
+    test "accepts repo options" do
+      log = capture_log(fn -> Scrivener.Ecto.Repo.paginate(Post, options: [log: true]) end)
+
+      assert log =~
+               "SELECT p0.\"id\", p0.\"title\", p0.\"body\", p0.\"published\", p0.\"inserted_at\", p0.\"updated_at\" FROM \"posts\" AS p0 LIMIT $1 OFFSET $2"
+
+      log = capture_log(fn -> Scrivener.Ecto.Repo.paginate(Post, options: [log: false]) end)
+      assert log == ""
     end
   end
 end
