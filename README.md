@@ -66,6 +66,35 @@ page =
   |> MyApp.Repo.paginate(page: 2, page_size: 5)
 ```
 
+## Supported Options
+
+There are several options that can be supplied in a dedicated `options` keyword list arg. Here is an example of using `options`...
+
+```elixir
+defmodule MyApp.Repo do
+  use Ecto.Repo, otp_app: :my_app, adapter: Ecto.Adapters.Postgres
+  use Scrivener, options: [allow_overflow_page_number: true]
+end
+```
+
+Here is an explanation of the supported options...
+
+* `:allow_overflow_page_number` - If set to true then when you supply a page greater than the total pages, it will return an empty list for entries. If set to false then it will (silently) treat any supplied `page` arg as if it was equal to the total pages. Default is false.
+
+## Other Configuration
+
+The behaviour of Ecto Scrivener can also be optionally configured by passing things directly to the `use Scrivener` statement rather than via the `options` keyword list arg. For example...
+
+```elixir
+defmodule MyApp.Module do
+  use Scrivener, page_size: 5, max_page_size: 100
+end
+```
+
+Here is an explanation of the directly configurable keys...
+
+* `:max_page_size` - This (silently) enforces a hard ceiling for the page size, even if you allow users of your application to specify page_size via query parameters. If not provided, there will be no limit to page size.
+
 ## Installation
 
 Add `scrivener_ecto` to your `mix.exs` `deps`.
